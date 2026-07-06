@@ -69,7 +69,7 @@ def main():
             "automatic-speech-recognition",
             model="CoRal-project/roest-v3-whisper-1.5b",
             device=device,
-            torch_dtype=torch.float32 if device_name == "directml" else None,
+            torch_dtype=torch.float16 if device_name == "directml" else None,
         )
 
         output = pipe(

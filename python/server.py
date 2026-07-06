@@ -55,7 +55,7 @@ def load_pipeline():
     }
 
     if device_name == "directml":
-        kwargs["torch_dtype"] = torch.float32
+        kwargs["torch_dtype"] = torch.float16
 
     pipe = pipeline("automatic-speech-recognition", **kwargs)
     print(f"Model loaded: {MODEL_NAME} on {device_name}")
