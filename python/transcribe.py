@@ -7,20 +7,6 @@ Apple Silicon (MPS) og CPU-fallback.
 
 Anvendelse:
     python transcribe.py --input lydfil.mp3 --output-json result.json --language da
-
-Valgfri GPU:
-    python transcribe.py --input lydfil.mp3 --output-json result.json --device cuda
-
-Output JSON format:
-{
-    "status": "success" | "error",
-    "text": "transskriberet tekst...",
-    "model": "CoRal-project/roest-v3-whisper-1.5b",
-    "language": "da",
-    "device": "cuda",
-    "runtime_ms": 12345,
-    "error": null | "fejlbesked..."
-}
 """
 
 import argparse
@@ -35,7 +21,7 @@ def main():
     parser.add_argument("--input", required=True, help="Sti til input lydfil (MP3)")
     parser.add_argument("--output-json", required=True, help="Sti til output JSON-fil")
     parser.add_argument("--language", default="da", help="Sprogkode (default: da)")
-    parser.add_argument("--device", default=None, help="Device override: cuda, directml, mps, cpu (auto-detect hvis udeladt)")
+    parser.add_argument("--device", default=None, help="Device override: cuda, directml, mps, cpu (auto-detect)")
     args = parser.parse_args()
 
     result = {
@@ -61,10 +47,6 @@ def main():
         device, device_name = resolve_device(args.device)
         result["device"] = device_name
 
-        pipe_kwargs = {
-            "automatic-speech-recognition",
-        }
-
         pipe = pipeline(
             "automatic-speech-recognition",
             model="CoRal-project/roest-v3-whisper-1.5b",
@@ -72,14 +54,19 @@ def main():
             torch_dtype=torch.float16 if device_name == "directml" else None,
         )
 
-        output = pipe(
-            {"array": audio_array, "sampling_rate": sample_rate},
-            generate_kwargs={"language": args.language, "task": "transcribe"},
-            return_timestamps=True,
-        )
+        audio_duration = len(audio_array) / sample_rate
+
+        if audio_duration > 30:
+            text = transcribe_chunked(pipe, audio_array, sample_rate, args.language)
+        else:
+            output = pipe(
+                {"array": audio_array, "sampling_rate": sample_rate},
+                generate_kwargs={"language": args.language, "task": "transcribe"},
+            )
+            text = output.get("text", "").strip()
 
         result["status"] = "success"
-        result["text"] = output.get("text", "").strip()
+        result["text"] = text
         result["runtime_ms"] = int((time.time() - start_time) * 1000)
 
     except Exception as e:
@@ -96,6 +83,39 @@ def main():
     else:
         print(json.dumps(result, ensure_ascii=False), file=sys.stderr)
         sys.exit(1)
+
+
+def transcribe_chunked(pipe, audio_array, sample_rate, language):
+    """Split audio into 30s chunks, transcribe each, concatenate results."""
+    chunk_duration = 30
+    overlap_duration = 1
+    chunk_samples = chunk_duration * sample_rate
+    overlap_samples = overlap_duration * sample_rate
+    step = chunk_samples - overlap_samples
+
+    texts = []
+    start = 0
+
+    while start < len(audio_array):
+        end = min(start + chunk_samples, len(audio_array))
+        chunk = audio_array[start:end]
+
+        output = pipe(
+            {"array": chunk, "sampling_rate": sample_rate},
+            generate_kwargs={
+                "language": language,
+                "task": "transcribe",
+                "num_beams": 1,
+            },
+        )
+
+        chunk_text = output.get("text", "").strip()
+        if chunk_text:
+            texts.append(chunk_text)
+
+        start += step
+
+    return " ".join(texts)
 
 
 def resolve_device(requested: str | None) -> tuple:
