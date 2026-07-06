@@ -19,27 +19,63 @@ Upload MP3          ProcessRecording          GenerateMeetingSummary
 
 ## Krav
 
-- PHP 8.3+
-- SQLite (default) eller MySQL/PostgreSQL
-- Python 3.10+ med CUDA-kompatibelt GPU (valgfrit til hurtig transskription)
-- DeepSeek API-nøgle
+- Docker + Docker Compose
+- DeepSeek API-nøgle (til opsummering)
+- OpenRouter API-nøgle (til transskription)
+- NVIDIA GPU + Container Toolkit (valgfrit — giver hurtigere lokal transskription)
 
-## Docker (anbefalet til server)
+## Docker (Proxmox / server)
 
-Kræver Docker og NVIDIA Container Toolkit (til GPU):
+### 1. Forbered Proxmox-containeren
 
 ```bash
-# Klon og byg
-git clone <repo-url> optager && cd optager
+# Inde i din LXC/VM på Proxmox:
+apt update && apt install -y docker.io docker-compose-v2 git curl
+```
 
-# Sæt dine API-nøgler
+Har du et NVIDIA GPU i maskinen, installer også:
+```bash
+# Installer NVIDIA-driver og Container Toolkit (på Proxmox host)
+apt install -y nvidia-driver-535 nvidia-container-toolkit
+systemctl restart docker
+```
+
+### 2. Klon og start
+
+```bash
+git clone https://github.com/mortenthogersen/optager.git && cd optager
+
+# Sæt API-nøgler
 cp .env.example .env
-# Redigér .env: DEEPSEEK_API_KEY=sk-din-nøgle, APP_KEY kan være tom (genereres ved opstart)
+nano .env  # Udfyld: DEEPSEEK_API_KEY + OPENROUTER_API_KEY
+```
 
-# Byg og start (med GPU)
+Sørg for at `.env` indeholder:
+```env
+TRANSCRIPTION_RUNNER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-din-openrouter-nøgle
+OPENROUTER_STT_MODEL=nvidia/parakeet-tdt-0.6b-v3
+DEEPSEEK_API_KEY=sk-din-deepseek-nøgle
+DEEPSEEK_MODEL=deepseek-v4-flash
+APP_KEY=
+```
+
+### 3. Byg og start
+
+```bash
+# GPU-maskine (NVIDIA):
 docker compose up -d --build
 
-# Opret admin-bruger
+# CPU-only (ingen GPU):
+# Redigér docker-compose.yml: fjern 'deploy.resources.reservations.devices' blokken
+docker compose up -d --build
+```
+
+Første build tager ~10 minutter (downloader PyTorch + Whisper model). Efterfølgende builds er hurtige.
+
+### 4. Opret admin-bruger
+
+```bash
 docker compose exec app php artisan tinker --execute '
     App\Models\User::factory()->create([
         "email" => "admin@example.com",
@@ -48,15 +84,32 @@ docker compose exec app php artisan tinker --execute '
 '
 ```
 
-Uden GPU (CPU-fallback):
-```bash
-# Fjern deploy.resources.reservations.devices fra docker-compose.yml
-# - eller brug:
-docker compose up -d --build
-# (virker uden GPU, bare langsommere transskription)
+### 5. Tilgå fra telefon
+
+Appen er tilgængelig på dit lokale netværk:
+
+| Side | URL |
+|------|-----|
+| **Optagelse (telefon)** | `http://<proxmox-ip>:8080/record` |
+| **Admin-panel** | `http://<proxmox-ip>:8080/admin` |
+
+Åbn optagelsessiden på din telefons browser, tryk på den røde knap og optag.
+
+### Sådan virker det
+
+```
+Telefon → http://server:8080/record → Laravel i Docker
+                                          │
+                                    OpenRouter API (NVIDIA Parakeet STT)
+                                          │  ~0,03 kr. / 3 min møde
+                                          ▼
+                                    DeepSeek API (møderesumé)
+                                          │
+                                          ▼
+                                    Admin-panel på /admin
 ```
 
-Admin-panelet er tilgængeligt på `http://<server-ip>:8080/admin`.
+## Lokal udvikling
 
 ### Docker på Mac (Metal GPU)
 
