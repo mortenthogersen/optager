@@ -1,9 +1,11 @@
-<div>
+<x-filament-panels::page>
     <form wire:submit="save">
         {{ $this->form }}
 
-        <div class="mt-6 flex gap-3">
-            {{ $this->saveAction }}
+        <div class="mt-6">
+            <x-filament::button type="submit" color="primary">
+                Gem indstillinger
+            </x-filament::button>
         </div>
     </form>
-</div>
+</x-filament-panels::page>
