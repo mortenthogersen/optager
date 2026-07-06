@@ -6,19 +6,20 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
-# Persist app key across container restarts (stored alongside SQLite database)
+# Persist app key across container restarts
 KEY_FILE=/var/www/html/database/.app_key
 
-if [ -z "$APP_KEY" ]; then
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
     if [ -f "$KEY_FILE" ]; then
-        # Restore key from persisted file
         APP_KEY=$(cat "$KEY_FILE")
-        sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
     else
-        # Generate new key and persist it
         php artisan key:generate --force --no-interaction
-        grep '^APP_KEY=' .env | cut -d= -f2 > "$KEY_FILE"
+        APP_KEY=$(grep '^APP_KEY=' .env | cut -d= -f2-)
+        echo "$APP_KEY" > "$KEY_FILE"
     fi
+    # Export so child processes (including config:cache) see it
+    export APP_KEY
+    sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
 fi
 
 # Ensure SQLite database exists
@@ -30,7 +31,8 @@ php artisan migrate --force --no-interaction || true
 # Production optimizations
 if [ "${APP_ENV}" != "local" ]; then
     php artisan filament:optimize --no-interaction || true
-    php artisan optimize --no-interaction || true
+    php artisan route:cache --no-interaction || true
+    php artisan view:cache --no-interaction || true
 fi
 
 # Storage link
