@@ -4,10 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use BackedEnum;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -21,69 +17,32 @@ class SettingsPage extends Page
 
     protected string $view = 'filament.pages.settings-page';
 
-    public ?array $data = [];
+    public string $openrouter_api_key = '';
+
+    public string $openrouter_stt_model = '';
+
+    public string $deepseek_api_key = '';
+
+    public string $deepseek_model = '';
+
+    public string $deepseek_base_url = '';
 
     public function mount(): void
     {
-        $this->form->fill([
-            'openrouter_api_key' => Setting::get('openrouter_api_key'),
-            'openrouter_stt_model' => Setting::get('openrouter_stt_model', 'nvidia/parakeet-tdt-0.6b-v3'),
-            'deepseek_api_key' => Setting::get('deepseek_api_key'),
-            'deepseek_model' => Setting::get('deepseek_model', 'deepseek-v4-flash'),
-            'deepseek_base_url' => Setting::get('deepseek_base_url', 'https://api.deepseek.com'),
-        ]);
-    }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Section::make('OpenRouter (Transskription)')
-                    ->schema([
-                        TextInput::make('openrouter_api_key')
-                            ->label('API-nøgle')
-                            ->password()
-                            ->revealable()
-                            ->placeholder('sk-or-v1-...')
-                            ->helperText('Findes på openrouter.ai/settings/keys'),
-                        TextInput::make('openrouter_stt_model')
-                            ->label('STT Model')
-                            ->placeholder('nvidia/parakeet-tdt-0.6b-v3')
-                            ->helperText('Model ID fra OpenRouter (f.eks. nvidia/parakeet-tdt-0.6b-v3)'),
-                    ])
-                    ->columns(2),
-
-                Section::make('DeepSeek (Opsummering)')
-                    ->schema([
-                        TextInput::make('deepseek_api_key')
-                            ->label('API-nøgle')
-                            ->password()
-                            ->revealable()
-                            ->placeholder('sk-...')
-                            ->helperText('Findes på platform.deepseek.com/api_keys'),
-                        Select::make('deepseek_model')
-                            ->label('Model')
-                            ->options([
-                                'deepseek-v4-flash' => 'DeepSeek V4 Flash (hurtig, billig)',
-                                'deepseek-v4-pro' => 'DeepSeek V4 Pro (bedre kvalitet)',
-                            ])
-                            ->native(false),
-                        TextInput::make('deepseek_base_url')
-                            ->label('API URL')
-                            ->placeholder('https://api.deepseek.com'),
-                    ])
-                    ->columns(2),
-            ])
-            ->statePath('data');
+        $this->openrouter_api_key = (string) Setting::get('openrouter_api_key');
+        $this->openrouter_stt_model = Setting::get('openrouter_stt_model', 'nvidia/parakeet-tdt-0.6b-v3');
+        $this->deepseek_api_key = (string) Setting::get('deepseek_api_key');
+        $this->deepseek_model = Setting::get('deepseek_model', 'deepseek-v4-flash');
+        $this->deepseek_base_url = Setting::get('deepseek_base_url', 'https://api.deepseek.com');
     }
 
     public function save(): void
     {
-        $data = $this->form->getState();
-
-        foreach ($data as $key => $value) {
-            Setting::set($key, $value ?? '');
-        }
+        Setting::set('openrouter_api_key', $this->openrouter_api_key);
+        Setting::set('openrouter_stt_model', $this->openrouter_stt_model);
+        Setting::set('deepseek_api_key', $this->deepseek_api_key);
+        Setting::set('deepseek_model', $this->deepseek_model);
+        Setting::set('deepseek_base_url', $this->deepseek_base_url);
 
         Notification::make()
             ->title('Indstillinger gemt')
