@@ -99,6 +99,7 @@ class ProcessRecordingTranscriptionJob implements ShouldQueue
                 'transcript_json' => $result,
                 'transcription_model' => $modelName,
                 'transcription_completed_at' => now(),
+                'duration_seconds' => $result['audio_duration_seconds'] ?? $this->recording->duration_seconds,
             ]);
 
             $recordingJob->update([

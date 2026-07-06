@@ -79,10 +79,12 @@ class OpenRouterTranscriber
             }
 
             $text = $response->json('text', '');
+            $audioSeconds = $response->json('usage.seconds', 0);
 
             Log::info('OpenRouter STT completed', [
                 'runtime_ms' => $runtimeMs,
                 'text_length' => mb_strlen($text),
+                'audio_seconds' => $audioSeconds,
                 'usage' => $response->json('usage'),
             ]);
 
@@ -92,6 +94,7 @@ class OpenRouterTranscriber
                 'model' => $this->model,
                 'language' => $language,
                 'runtime_ms' => $runtimeMs,
+                'audio_duration_seconds' => (int) $audioSeconds,
                 'error' => null,
             ];
 
