@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: optager:latest
+    container_name: optager
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      # Persistent storage for SQLite DB and recordings
+      - app-data:/var/www/html/database
+      - recordings-data:/var/www/html/storage/app/recordings
+      # Hugging Face model cache (survives rebuilds)
+      - hf-cache:/root/.cache/huggingface
+    environment:
+      APP_NAME: "${APP_NAME:-Mødeoptager}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${APP_URL:-http://localhost}"
+      APP_KEY: "${APP_KEY}"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      FILESYSTEM_DISK: local
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY}"
+      DEEPSEEK_MODEL: "${DEEPSEEK_MODEL:-deepseek-v4-flash}"
+      DEEPSEEK_BASE_URL: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+      TRANSCRIPTION_PYTHON_PATH: python
+      TRANSCRIPTION_DEVICE: auto
+    restart: unless-stopped
+    # GPU reservation (requires nvidia-container-toolkit on host)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  app-data:
+  recordings-data:
+  hf-cache:

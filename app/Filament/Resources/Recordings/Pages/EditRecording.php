@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Filament\Resources\Recordings\Pages;
+
+use App\Filament\Resources\Recordings\RecordingResource;
+use Filament\Actions\DeleteAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditRecording extends EditRecord
+{
+    protected static string $resource = RecordingResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            DeleteAction::make(),
+        ];
+    }
+}

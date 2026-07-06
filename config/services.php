@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'deepseek' => [
+        'api_key' => env('DEEPSEEK_API_KEY'),
+        'model' => env('DEEPSEEK_MODEL', 'deepseek-v4-flash'),
+        'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
+    ],
+
+    'transcription' => [
+        'python_path' => env('TRANSCRIPTION_PYTHON_PATH', 'python3'),
+        'script_path' => env('TRANSCRIPTION_SCRIPT_PATH', base_path('python/transcribe.py')),
+        'device' => env('TRANSCRIPTION_DEVICE', 'auto'),
+    ],
+
 ];
