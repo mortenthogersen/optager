@@ -181,7 +181,7 @@
             addHidden(form, 'audio_name', 'recording.webm');
 
             const title = document.querySelector('input[name="title"]').value;
-            if (title) addHidden(form, 'title', title);
+            addHidden(form, 'title', title);
 
             document.body.appendChild(form);
             form.submit();

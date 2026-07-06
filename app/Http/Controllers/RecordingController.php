@@ -47,7 +47,7 @@ class RecordingController extends Controller
 
         $recording = Recording::create([
             'uuid' => $uuid,
-            'title' => $validated['title'] ?: now()->format('d/m/Y H:i'),
+            'title' => $validated['title'] ?? null ?: now()->format('d/m/Y H:i'),
             'source_type' => 'manual_upload',
             'status' => 'uploaded',
             'audio_disk' => 'recordings',
