@@ -1,52 +1,36 @@
-FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
+FROM php:8.4-fpm-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
 
-# System dependencies + PHP 8.4 from ondrej PPA
+# System dependencies + PHP extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
     curl \
     ca-certificates \
-    && add-apt-repository -y ppa:ondrej/php \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        php8.4-fpm \
-        php8.4-cli \
-        php8.4-sqlite3 \
-        php8.4-mbstring \
-        php8.4-xml \
-        php8.4-curl \
-        php8.4-zip \
-        php8.4-bcmath \
-        php8.4-intl \
-        php8.4-gd \
-        nginx \
-        supervisor \
-        libgl1 \
-        libgomp1 \
+    nginx \
+    supervisor \
+    libicu-dev \
+    libzip-dev \
+    libpng-dev \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        pdo_sqlite \
+        mbstring \
+        intl \
+        bcmath \
+        zip \
+        gd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Python ASR dependencies
-RUN pip install --no-cache-dir \
-    transformers>=4.46.0 \
-    librosa>=0.10.0 \
-    numpy>=1.24.0
-
-# Pre-download model during build (cached in Docker layer)
-RUN python -c "from transformers import pipeline; pipeline('automatic-speech-recognition', model='CoRal-project/roest-v3-whisper-1.5b')" || true
-
 # PHP config
-RUN sed -i 's/upload_max_filesize = .*/upload_max_filesize = 512M/' /etc/php/8.4/fpm/php.ini \
-    && sed -i 's/post_max_size = .*/post_max_size = 512M/' /etc/php/8.4/fpm/php.ini \
-    && sed -i 's/max_execution_time = .*/max_execution_time = 300/' /etc/php/8.4/fpm/php.ini
+RUN echo 'upload_max_filesize = 512M' > /usr/local/etc/php/conf.d/optager.ini \
+    && echo 'post_max_size = 512M' >> /usr/local/etc/php/conf.d/optager.ini \
+    && echo 'max_execution_time = 300' >> /usr/local/etc/php/conf.d/optager.ini
 
 # Working directory
 WORKDIR /var/www/html
 
-# Copy app code (vendor excluded via .dockerignore)
+# Copy app code
 COPY . .
 
 # Install PHP dependencies
@@ -54,8 +38,9 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
     && composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 
 # Nginx config
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && mkdir -p /etc/nginx/sites-enabled
 COPY docker/nginx.conf /etc/nginx/sites-enabled/default
-RUN rm -f /etc/nginx/sites-enabled/default.orig
 
 # Supervisor config
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
