@@ -79,7 +79,7 @@ class RecordingsTable
                             return '—';
                         }
 
-                        return sprintf('~%.2f kr.', $record->duration_seconds * 0.0015 * 6.9);
+                        return sprintf('~%.2f kr.', ($record->duration_seconds / 60) * 0.0015 * 6.9);
                     })
                     ->toggleable(),
                 TextColumn::make('transcription_model')

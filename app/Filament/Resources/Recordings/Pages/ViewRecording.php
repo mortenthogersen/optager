@@ -132,7 +132,7 @@ class ViewRecording extends ViewRecord
                                 default => 0.0015,
                             };
 
-                            $usdCost = $duration * $sttRate;
+                            $usdCost = ($duration / 60) * $sttRate;
                             $dkkCost = $usdCost * 6.9;
 
                             $runner = config('services.transcription.runner', 'process');
