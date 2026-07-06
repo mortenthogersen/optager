@@ -13,6 +13,7 @@ class CreateRecording extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $data['title'] ??= now()->format('d/m/Y H:i');
         $data['source_type'] ??= 'manual_upload';
         $data['status'] = 'uploaded';
         $data['audio_disk'] = 'recordings';
