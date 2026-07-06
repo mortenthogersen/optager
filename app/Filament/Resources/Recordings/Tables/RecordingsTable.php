@@ -68,7 +68,7 @@ class RecordingsTable
                     ->toggleable(),
                 TextColumn::make('stt_cost')
                     ->label('Pris (STT)')
-                    ->getStateUsing(function ($record): ?string {
+                    ->state(function ($record): ?string {
                         if (! $record->duration_seconds) {
                             return null;
                         }
