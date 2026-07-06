@@ -23,14 +23,16 @@ class PythonRunner
 
         $outputPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.'transcript_'.uniqid().'.json';
 
-        $command = [
-            $this->pythonPath,
-            $this->scriptPath,
-            '--input', $audioPath,
-            '--output-json', $outputPath,
-            '--language', $language,
-            '--device', config('services.transcription.device', 'auto'),
-        ];
+        $command = array_merge(
+            explode(' ', $this->pythonPath),
+            [
+                $this->scriptPath,
+                '--input', $audioPath,
+                '--output-json', $outputPath,
+                '--language', $language,
+                '--device', config('services.transcription.device', 'auto'),
+            ],
+        );
 
         Log::info('Starting Python transcription', [
             'command' => implode(' ', $command),

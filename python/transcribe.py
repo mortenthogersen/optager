@@ -58,13 +58,18 @@ def main():
 
         audio_array, sample_rate = load_audio_preprocessed(args.input)
 
-        device = resolve_device(args.device)
-        result["device"] = device
+        device, device_name = resolve_device(args.device)
+        result["device"] = device_name
+
+        pipe_kwargs = {
+            "automatic-speech-recognition",
+        }
 
         pipe = pipeline(
             "automatic-speech-recognition",
             model="CoRal-project/roest-v3-whisper-1.5b",
             device=device,
+            torch_dtype=torch.float32 if device_name == "directml" else None,
         )
 
         output = pipe(
@@ -93,29 +98,29 @@ def main():
         sys.exit(1)
 
 
-def resolve_device(requested: str | None) -> str:
-    """Detect best available GPU, or use the one explicitly requested."""
-    if requested and requested != "auto":
-        return requested
-
+def resolve_device(requested: str | None) -> tuple:
+    """Detect best available GPU, return (device, name string)."""
     import torch
 
+    if requested and requested not in ("auto", ""):
+        return (requested, requested)
+
     if torch.cuda.is_available():
-        return "cuda"
+        return (0, "cuda")
 
     if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return "mps"
+        return ("mps", "mps")
 
     try:
         import torch_directml
 
-        device = torch_directml.device()
-        _test = torch.zeros(1).to(device)
-        return "directml"
+        dml_device = torch_directml.device()
+        _test = torch.zeros(1).to(dml_device)
+        return (dml_device, "directml")
     except Exception:
         pass
 
-    return "cpu"
+    return (-1, "cpu")
 
 
 def load_audio_preprocessed(file_path: str):

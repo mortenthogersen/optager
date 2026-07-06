@@ -25,25 +25,39 @@ device_name = "cpu"
 
 
 def resolve_device():
-    """Detect best available GPU for Mac (MPS) or CPU fallback."""
+    """Detect best available GPU: CUDA → MPS → DirectML → CPU."""
     if torch.cuda.is_available():
-        return "cuda"
+        return (0, "cuda")
 
     if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return "mps"
+        return ("mps", "mps")
 
-    return "cpu"
+    try:
+        import torch_directml
+
+        dml_device = torch_directml.device()
+        _test = torch.zeros(1).to(dml_device)
+        return (dml_device, "directml")
+    except Exception:
+        pass
+
+    return (-1, "cpu")
 
 
 def load_pipeline():
     global pipe, device_name
-    device_name = resolve_device()
+    device, device_name = resolve_device()
     warnings.filterwarnings("ignore")
-    pipe = pipeline(
-        "automatic-speech-recognition",
-        model=MODEL_NAME,
-        device=device_name,
-    )
+
+    kwargs = {
+        "model": MODEL_NAME,
+        "device": device,
+    }
+
+    if device_name == "directml":
+        kwargs["torch_dtype"] = torch.float32
+
+    pipe = pipeline("automatic-speech-recognition", **kwargs)
     print(f"Model loaded: {MODEL_NAME} on {device_name}")
 
 
