@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_DATE: "${BUILD_DATE:-0}"
     image: optager:latest
     container_name: optager
     ports:
