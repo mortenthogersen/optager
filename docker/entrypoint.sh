@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-# Wait for SQLite database
+# Ensure .env exists (env vars from docker-compose are used at runtime)
+test -f .env || cp .env.example .env
+
+# Ensure SQLite database exists
 touch /var/www/html/database/database.sqlite
 
 # Generate app key if not set
@@ -9,17 +12,10 @@ if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force --no-interaction
 fi
 
-# Run migrations
-php artisan migrate --force --no-interaction
+# Run migrations (safe to retry)
+php artisan migrate --force --no-interaction || true
 
-# Storage link
+# Storage link (may already exist)
 php artisan storage:link --force --no-interaction 2>/dev/null || true
-
-# Cache config for production
-if [ "${APP_ENV}" = "production" ]; then
-    php artisan config:cache --no-interaction
-    php artisan route:cache --no-interaction
-    php artisan view:cache --no-interaction
-fi
 
 exec "$@"

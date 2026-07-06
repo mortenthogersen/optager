@@ -32,6 +32,9 @@ WORKDIR /var/www/html
 # Copy app code
 COPY . .
 
+# Create .env from example if missing (env vars come from docker-compose)
+RUN test -f .env || cp .env.example .env
+
 # Install PHP dependencies
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer install --no-dev --no-interaction --no-progress --optimize-autoloader
