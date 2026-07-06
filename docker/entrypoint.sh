@@ -4,9 +4,21 @@ set -e
 # Ensure .env exists
 if [ ! -f .env ]; then
     cp .env.example .env
-    php artisan key:generate --force --no-interaction
-elif [ -z "$APP_KEY" ]; then
-    php artisan key:generate --force --no-interaction
+fi
+
+# Persist app key across container restarts (stored alongside SQLite database)
+KEY_FILE=/var/www/html/database/.app_key
+
+if [ -z "$APP_KEY" ]; then
+    if [ -f "$KEY_FILE" ]; then
+        # Restore key from persisted file
+        APP_KEY=$(cat "$KEY_FILE")
+        sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+    else
+        # Generate new key and persist it
+        php artisan key:generate --force --no-interaction
+        grep '^APP_KEY=' .env | cut -d= -f2 > "$KEY_FILE"
+    fi
 fi
 
 # Ensure SQLite database exists
