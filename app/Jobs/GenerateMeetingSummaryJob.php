@@ -102,14 +102,14 @@ class GenerateMeetingSummaryJob implements ShouldQueue
 
         $lines[] = '## Resumé';
         $lines[] = '';
-        $lines[] = $result['summary'] ?? 'Intet resumé tilgængeligt';
+        $lines[] = $this->stringify($result['summary'] ?? 'Intet resumé tilgængeligt');
         $lines[] = '';
 
         if (! empty($result['decisions'])) {
             $lines[] = '## Beslutninger';
             $lines[] = '';
             foreach ((array) $result['decisions'] as $decision) {
-                $lines[] = "- {$decision}";
+                $lines[] = '- '.$this->stringify($decision);
             }
             $lines[] = '';
         }
@@ -118,7 +118,7 @@ class GenerateMeetingSummaryJob implements ShouldQueue
             $lines[] = '## Handlingspunkter';
             $lines[] = '';
             foreach ((array) $result['action_items'] as $item) {
-                $lines[] = "- {$item}";
+                $lines[] = '- '.$this->stringify($item);
             }
             $lines[] = '';
         }
@@ -127,7 +127,7 @@ class GenerateMeetingSummaryJob implements ShouldQueue
             $lines[] = '## Åbne Spørgsmål';
             $lines[] = '';
             foreach ((array) $result['open_questions'] as $question) {
-                $lines[] = "- {$question}";
+                $lines[] = '- '.$this->stringify($question);
             }
             $lines[] = '';
         }
@@ -135,10 +135,23 @@ class GenerateMeetingSummaryJob implements ShouldQueue
         if (! empty($result['follow_up'])) {
             $lines[] = '## Opfølgning';
             $lines[] = '';
-            $lines[] = $result['follow_up'];
+            $lines[] = $this->stringify($result['follow_up']);
             $lines[] = '';
         }
 
         return implode("\n", $lines);
+    }
+
+    private function stringify(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        }
+
+        return (string) $value;
     }
 }
