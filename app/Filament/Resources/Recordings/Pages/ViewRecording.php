@@ -118,6 +118,31 @@ class ViewRecording extends ViewRecord
                     TextEntry::make('duration_seconds')
                         ->label('Varighed')
                         ->formatStateUsing(fn (?int $state): string => $state ? $this->formatDuration($state) : '—'),
+                    TextEntry::make('cost_estimate')
+                        ->label('Estimeret pris (STT)')
+                        ->getStateUsing(function ($record): ?string {
+                            $duration = $record->duration_seconds;
+                            if (! $duration) {
+                                return null;
+                            }
+
+                            $sttModel = $record->transcription_model ?? config('services.openrouter.stt_model');
+                            $sttRate = match ($sttModel) {
+                                'nvidia/parakeet-tdt-0.6b-v3' => 0.0015,
+                                default => 0.0015,
+                            };
+
+                            $usdCost = $duration * $sttRate;
+                            $dkkCost = $usdCost * 6.9;
+
+                            $runner = config('services.transcription.runner', 'process');
+
+                            if ($runner === 'openrouter') {
+                                return sprintf('$%.4f (~%.2f kr.)', $usdCost, $dkkCost);
+                            }
+
+                            return '— (lokal GPU)';
+                        }),
                 ])
                 ->columns(4),
 

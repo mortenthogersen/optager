@@ -66,6 +66,22 @@ class RecordingsTable
                     ->formatStateUsing(fn (?int $state): string => $state ? self::formatDuration($state) : '—')
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('stt_cost')
+                    ->label('Pris (STT)')
+                    ->getStateUsing(function ($record): ?string {
+                        if (! $record->duration_seconds) {
+                            return null;
+                        }
+
+                        $runner = config('services.transcription.runner', 'process');
+
+                        if ($runner !== 'openrouter') {
+                            return '—';
+                        }
+
+                        return sprintf('~%.2f kr.', $record->duration_seconds * 0.0015 * 6.9);
+                    })
+                    ->toggleable(),
                 TextColumn::make('transcription_model')
                     ->label('Transskriptionsmodel')
                     ->toggleable(isToggledHiddenByDefault: true)
