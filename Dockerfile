@@ -40,6 +40,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
     && composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 
 # Nginx config
+RUN rm -f /etc/nginx/sites-enabled/default
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Supervisor config

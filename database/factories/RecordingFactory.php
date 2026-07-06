@@ -14,16 +14,16 @@ class RecordingFactory extends Factory
     {
         return [
             'uuid' => (string) Str::uuid(),
-            'title' => fake()->optional()->sentence(3),
+            'title' => $this->faker->optional()->sentence(3),
             'source_type' => 'manual_upload',
             'status' => 'uploaded',
             'audio_disk' => 'recordings',
-            'audio_path' => 'recordings/'.fake()->uuid().'.mp3',
-            'audio_original_name' => fake()->word().'.mp3',
+            'audio_path' => 'recordings/'.$this->faker->uuid().'.mp3',
+            'audio_original_name' => $this->faker->word().'.mp3',
             'audio_mime' => 'audio/mpeg',
-            'audio_size_bytes' => fake()->numberBetween(1000, 10000000),
-            'audio_checksum' => fake()->sha256(),
-            'duration_seconds' => fake()->optional()->numberBetween(60, 3600),
+            'audio_size_bytes' => $this->faker->numberBetween(1000, 10000000),
+            'audio_checksum' => $this->faker->sha256(),
+            'duration_seconds' => $this->faker->optional()->numberBetween(60, 3600),
             'language' => 'da',
         ];
     }
