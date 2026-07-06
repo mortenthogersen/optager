@@ -88,6 +88,45 @@ docker compose exec app php artisan tinker --execute '
 
 Herefter kør transskription på Mac'ens MPS GPU (~30-60 sek for 1,5 minuts lyd), mens Laravel kører i Docker. Husk at aktivere `venv` med `source venv/bin/activate` hver gang du starter serveren.
 
+### Lokalt på Mac med Herd (anbefalet til udvikling)
+
+Hvis du har [Herd](https://herd.laravel.com) installeret, kører alt nativt — ingen Docker nødvendig:
+
+```bash
+# 1. Klon projektet ind i en Herd-mappe
+cd ~/Herd
+git clone https://github.com/mortenthogersen/optager.git
+cd optager
+
+# 2. Opsæt Laravel
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install && npm run build
+
+# 3. Opret admin-bruger
+php artisan tinker --execute '
+    App\Models\User::factory()->create([
+        "email" => "admin@example.com",
+        "password" => "password"
+    ]);
+'
+
+# 4. Opsæt Python venv (Homebrew Python kræver dette)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r python/requirements.txt
+
+# 5. Start transskriptionsserveren (Terminal 1)
+python python/server.py
+
+# 6. Start queue worker (Terminal 2)
+php artisan queue:work --tries=1 --timeout=3600
+```
+
+Åbn `https://optager.test/admin` i browseren. Sæt `TRANSCRIPTION_RUNNER=http` i `.env` hvis du bruger Python-serveren; med `TRANSCRIPTION_RUNNER=process` kalder Laravel Python direkte via CLI (kræver at venv er aktiveret i queue worker-terminalen).
+
 ## Installation (lokal udvikling)
 
 ```bash
