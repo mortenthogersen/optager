@@ -89,6 +89,22 @@ class RecordingsTable
                 TextColumn::make('summary_model')
                     ->label('Opsummeringsmodel')
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('process_time')
+                    ->label('Behandling')
+                    ->state(function ($record): ?string {
+                        $start = $record->transcription_started_at;
+                        $end = $record->summary_completed_at ?? $record->transcription_completed_at;
+                        if (! $start || ! $end) {
+                            return null;
+                        }
+                        $s = (int) $start->diffInSeconds($end);
+                        if ($s < 60) {
+                            return "{$s}s";
+                        }
+
+                        return floor($s / 60).'m '.($s % 60).'s';
+                    })
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Uploadet')
                     ->dateTime('d/m/Y H:i')

@@ -150,6 +150,12 @@ class ViewRecording extends ViewRecord
                 ->schema([
                     TextEntry::make('transcription_model')
                         ->label('Model'),
+                    TextEntry::make('transcription_duration')
+                        ->label('Behandlingstid')
+                        ->getStateUsing(fn ($record): ?string => $this->formatElapsed(
+                            $record->transcription_started_at,
+                            $record->transcription_completed_at
+                        )),
                     TextEntry::make('transcription_started_at')
                         ->label('Startet')
                         ->dateTime('d/m/Y H:i:s'),
@@ -157,7 +163,7 @@ class ViewRecording extends ViewRecord
                         ->label('Færdiggjort')
                         ->dateTime('d/m/Y H:i:s'),
                 ])
-                ->columns(3)
+                ->columns(4)
                 ->collapsible(),
 
             Section::make('Transskriptionstekst')
@@ -177,6 +183,12 @@ class ViewRecording extends ViewRecord
                 ->schema([
                     TextEntry::make('summary_model')
                         ->label('Model'),
+                    TextEntry::make('summary_duration')
+                        ->label('Behandlingstid')
+                        ->getStateUsing(fn ($record): ?string => $this->formatElapsed(
+                            $record->summary_started_at,
+                            $record->summary_completed_at
+                        )),
                     TextEntry::make('summary_started_at')
                         ->label('Startet')
                         ->dateTime('d/m/Y H:i:s'),
@@ -184,7 +196,7 @@ class ViewRecording extends ViewRecord
                         ->label('Færdiggjort')
                         ->dateTime('d/m/Y H:i:s'),
                 ])
-                ->columns(3)
+                ->columns(4)
                 ->collapsible(),
 
             Section::make('Resumé (Markdown)')
@@ -269,5 +281,23 @@ class ViewRecording extends ViewRecord
         }
 
         return sprintf('%d:%02d', $minutes, $secs);
+    }
+
+    private function formatElapsed($start, $end): ?string
+    {
+        if (! $start || ! $end) {
+            return null;
+        }
+
+        $seconds = (int) $start->diffInSeconds($end);
+
+        if ($seconds < 60) {
+            return "{$seconds} sek";
+        }
+
+        $minutes = floor($seconds / 60);
+        $secs = $seconds % 60;
+
+        return "{$minutes} min {$secs} sek";
     }
 }
