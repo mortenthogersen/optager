@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Recording;
+use App\Services\Transcription\OpenRouterTranscriber;
 use App\Services\Transcription\PythonHttpRunner;
 use App\Services\Transcription\PythonRunner;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,7 +21,7 @@ class ProcessRecordingTranscriptionJob implements ShouldQueue
         public Recording $recording,
     ) {}
 
-    public function handle(PythonRunner $processRunner, PythonHttpRunner $httpRunner): void
+    public function handle(PythonRunner $processRunner, PythonHttpRunner $httpRunner, OpenRouterTranscriber $openRouterRunner): void
     {
         $runnerMode = config('services.transcription.runner', 'process');
         $audioPath = Storage::disk($this->recording->audio_disk)->path($this->recording->audio_path);
@@ -29,6 +30,7 @@ class ProcessRecordingTranscriptionJob implements ShouldQueue
         try {
             $result = match ($runnerMode) {
                 'http' => $httpRunner->transcribe(audioPath: $audioPath, language: $language),
+                'openrouter' => $openRouterRunner->transcribe(audioPath: $audioPath, language: $language),
                 default => $processRunner->transcribe(audioPath: $audioPath, language: $language),
             };
         } catch (\Throwable $e) {

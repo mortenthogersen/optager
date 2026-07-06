@@ -50,4 +50,9 @@ return [
         'timeout' => env('TRANSCRIPTION_TIMEOUT', 3600),
     ],
 
+    'openrouter' => [
+        'api_key' => env('OPENROUTER_API_KEY'),
+        'stt_model' => env('OPENROUTER_STT_MODEL', 'nvidia/parakeet-tdt-0.6b-v3'),
+    ],
+
 ];

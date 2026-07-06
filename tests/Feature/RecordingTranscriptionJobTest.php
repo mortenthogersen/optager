@@ -2,6 +2,7 @@
 
 use App\Jobs\ProcessRecordingTranscriptionJob;
 use App\Models\Recording;
+use App\Services\Transcription\OpenRouterTranscriber;
 use App\Services\Transcription\PythonHttpRunner;
 use App\Services\Transcription\PythonRunner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ test('transcription job updates recording status on success', function () {
         ]);
 
     $job = new ProcessRecordingTranscriptionJob($recording);
-    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class), Mockery::mock(OpenRouterTranscriber::class));
 
     $recording->refresh();
 
@@ -66,7 +67,7 @@ test('transcription job creates recording job record', function () {
         ]);
 
     $job = new ProcessRecordingTranscriptionJob($recording);
-    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class), Mockery::mock(OpenRouterTranscriber::class));
 
     $recording->refresh();
 
@@ -98,7 +99,7 @@ test('transcription job handles failure gracefully', function () {
         ]);
 
     $job = new ProcessRecordingTranscriptionJob($recording);
-    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class), Mockery::mock(OpenRouterTranscriber::class));
 
     $recording->refresh();
 
@@ -123,7 +124,7 @@ test('transcription job handles exception', function () {
 
     $job = new ProcessRecordingTranscriptionJob($recording);
 
-    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class), Mockery::mock(OpenRouterTranscriber::class));
 
     $recording->refresh();
 
