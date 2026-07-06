@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Recording;
+use App\Services\Transcription\PythonHttpRunner;
 use App\Services\Transcription\PythonRunner;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,7 +20,32 @@ class ProcessRecordingTranscriptionJob implements ShouldQueue
         public Recording $recording,
     ) {}
 
-    public function handle(PythonRunner $pythonRunner): void
+    public function handle(PythonRunner $processRunner, PythonHttpRunner $httpRunner): void
+    {
+        $runnerMode = config('services.transcription.runner', 'process');
+        $audioPath = Storage::disk($this->recording->audio_disk)->path($this->recording->audio_path);
+        $language = $this->recording->language ?? 'da';
+
+        try {
+            $result = match ($runnerMode) {
+                'http' => $httpRunner->transcribe(audioPath: $audioPath, language: $language),
+                default => $processRunner->transcribe(audioPath: $audioPath, language: $language),
+            };
+        } catch (\Throwable $e) {
+            $result = [
+                'status' => 'error',
+                'text' => '',
+                'model' => '',
+                'language' => $language,
+                'runtime_ms' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+
+        $this->processResult($result);
+    }
+
+    private function processResult(array $result): void
     {
         Log::info('ProcessRecordingTranscriptionJob started', [
             'recording_id' => $this->recording->id,
@@ -38,13 +64,6 @@ class ProcessRecordingTranscriptionJob implements ShouldQueue
                 'status' => 'transcribing',
                 'transcription_started_at' => now(),
             ]);
-
-            $audioFullPath = Storage::disk($this->recording->audio_disk)->path($this->recording->audio_path);
-
-            $result = $pythonRunner->transcribe(
-                audioPath: $audioFullPath,
-                language: $this->recording->language ?? 'da',
-            );
 
             if (($result['status'] ?? '') === 'error') {
                 $errorMessage = $result['error'] ?? 'Unknown transcription error';

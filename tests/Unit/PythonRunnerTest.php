@@ -32,6 +32,8 @@ test('python runner uses default config', function () {
     $pythonPath = $reflection->getProperty('pythonPath')->getValue($runner);
     $scriptPath = $reflection->getProperty('scriptPath')->getValue($runner);
 
-    expect($pythonPath)->toBe('python3');
+    $expectedPython = PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
+
+    expect($pythonPath)->toBe($expectedPython);
     expect($scriptPath)->toContain('python/transcribe.py');
 });

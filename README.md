@@ -58,6 +58,30 @@ docker compose up -d --build
 
 Admin-panelet er tilgængeligt på `http://<server-ip>:8080/admin`.
 
+### Docker på Mac (Metal GPU)
+
+Docker på Mac kan ikke tilgå Metal GPU direkte. I stedet kører Python på macOS host med MPS-acceleration og Laravel i Docker:
+
+```bash
+# 1. Installer Python-afhængigheder og start transskriptionsserveren
+pip install -r python/requirements.txt
+python python/server.py
+# Lytter på http://127.0.0.1:9137 — lad det køre i et separat terminalvindue
+
+# 2. Start Laravel i Docker (bruger HTTP-runner til hostens Python)
+docker compose -f docker-compose.mac.yml up -d --build
+
+# 3. Opret admin
+docker compose exec app php artisan tinker --execute '
+    App\Models\User::factory()->create([
+        "email" => "admin@example.com",
+        "password" => "password"
+    ]);
+'
+```
+
+Transskription kører nu på Mac'ens MPS GPU (~30-60 sek for 1,5 minuts lyd), mens Laravel kører i Docker.
+
 ## Installation (lokal udvikling)
 
 ```bash

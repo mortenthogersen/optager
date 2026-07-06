@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: optager:latest
+    container_name: optager
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - app-data:/var/www/html/database
+      - recordings-data:/var/www/html/storage/app/recordings
+      # Mount host HuggingFace cache (downloads model once)
+      - ${HOME:-~}/.cache/huggingface:/root/.cache/huggingface
+    extra_hosts:
+      # Let Docker reach the Python transcription service on the Mac host
+      - "host.docker.internal:host-gateway"
+    environment:
+      APP_NAME: "${APP_NAME:-Mødeoptager}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${APP_URL:-http://localhost}"
+      APP_KEY: "${APP_KEY}"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /var/www/html/database/database.sqlite
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      FILESYSTEM_DISK: local
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY}"
+      DEEPSEEK_MODEL: "${DEEPSEEK_MODEL:-deepseek-v4-flash}"
+      DEEPSEEK_BASE_URL: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+      # Use HTTP runner to call Python service on host (GPU via MPS)
+      TRANSCRIPTION_RUNNER: http
+      TRANSCRIPTION_SERVICE_URL: "http://host.docker.internal:9137"
+    restart: unless-stopped
+    # No GPU reservation — Python runs on the host with Metal/MPS
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  app-data:
+  recordings-data:

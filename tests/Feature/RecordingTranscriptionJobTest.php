@@ -2,6 +2,7 @@
 
 use App\Jobs\ProcessRecordingTranscriptionJob;
 use App\Models\Recording;
+use App\Services\Transcription\PythonHttpRunner;
 use App\Services\Transcription\PythonRunner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -12,6 +13,7 @@ uses(RefreshDatabase::class);
 test('transcription job updates recording status on success', function () {
     Storage::fake('recordings');
     Queue::fake();
+    config(['services.transcription.runner' => 'process']);
 
     $recording = Recording::factory()->create([
         'status' => 'uploaded',
@@ -31,7 +33,7 @@ test('transcription job updates recording status on success', function () {
         ]);
 
     $job = new ProcessRecordingTranscriptionJob($recording);
-    $job->handle($mockRunner);
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
 
     $recording->refresh();
 
@@ -44,6 +46,7 @@ test('transcription job updates recording status on success', function () {
 test('transcription job creates recording job record', function () {
     Storage::fake('recordings');
     Queue::fake();
+    config(['services.transcription.runner' => 'process']);
 
     $recording = Recording::factory()->create([
         'status' => 'uploaded',
@@ -63,7 +66,7 @@ test('transcription job creates recording job record', function () {
         ]);
 
     $job = new ProcessRecordingTranscriptionJob($recording);
-    $job->handle($mockRunner);
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
 
     $recording->refresh();
 
@@ -75,6 +78,7 @@ test('transcription job creates recording job record', function () {
 test('transcription job handles failure gracefully', function () {
     Storage::fake('recordings');
     Queue::fake();
+    config(['services.transcription.runner' => 'process']);
 
     $recording = Recording::factory()->create([
         'status' => 'uploaded',
@@ -94,7 +98,7 @@ test('transcription job handles failure gracefully', function () {
         ]);
 
     $job = new ProcessRecordingTranscriptionJob($recording);
-    $job->handle($mockRunner);
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
 
     $recording->refresh();
 
@@ -105,6 +109,7 @@ test('transcription job handles failure gracefully', function () {
 test('transcription job handles exception', function () {
     Storage::fake('recordings');
     Queue::fake();
+    config(['services.transcription.runner' => 'process']);
 
     $recording = Recording::factory()->create([
         'status' => 'uploaded',
@@ -118,7 +123,7 @@ test('transcription job handles exception', function () {
 
     $job = new ProcessRecordingTranscriptionJob($recording);
 
-    expect(fn () => $job->handle($mockRunner))->toThrow(RuntimeException::class);
+    $job->handle($mockRunner, Mockery::mock(PythonHttpRunner::class));
 
     $recording->refresh();
 

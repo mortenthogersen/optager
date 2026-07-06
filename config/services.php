@@ -45,6 +45,9 @@ return [
         'python_path' => env('TRANSCRIPTION_PYTHON_PATH', 'python3'),
         'script_path' => env('TRANSCRIPTION_SCRIPT_PATH', base_path('python/transcribe.py')),
         'device' => env('TRANSCRIPTION_DEVICE', 'auto'),
+        'runner' => env('TRANSCRIPTION_RUNNER', 'process'),
+        'service_url' => env('TRANSCRIPTION_SERVICE_URL', 'http://127.0.0.1:9137'),
+        'timeout' => env('TRANSCRIPTION_TIMEOUT', 3600),
     ],
 
 ];
