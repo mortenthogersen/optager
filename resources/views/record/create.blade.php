@@ -166,36 +166,36 @@
         document.getElementById('timer').textContent = mins + ':' + secs;
     }
 
-    async function uploadBlob() {
+    function uploadBlob() {
+        const reader = new FileReader();
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        const formData = new FormData();
-        formData.append('audio', blob, 'recording.webm');
-        formData.append('_token', '{{ csrf_token() }}');
 
-        const title = document.querySelector('input[name="title"]').value;
-        if (title) formData.append('title', title);
+        reader.onload = function () {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route('record.store') }}';
+            form.style.display = 'none';
 
-        try {
-            const resp = await fetch('{{ route('record.store') }}', {
-                method: 'POST',
-                body: formData,
-            });
+            addHidden(form, '_token', '{{ csrf_token() }}');
+            addHidden(form, 'audio_data', reader.result);
+            addHidden(form, 'audio_name', 'recording.webm');
 
-            if (resp.redirected) {
-                window.location.href = resp.url;
-            } else if (resp.ok) {
-                const html = await resp.text();
-                document.body.innerHTML = html;
-            } else {
-                alert('Upload fejlede. Prøv igen.');
-                document.getElementById('recording-ui').classList.remove('hidden');
-                document.getElementById('upload-progress').classList.add('hidden');
-            }
-        } catch (err) {
-            alert('Upload fejlede: ' + err.message);
-            document.getElementById('recording-ui').classList.remove('hidden');
-            document.getElementById('upload-progress').classList.add('hidden');
-        }
+            const title = document.querySelector('input[name="title"]').value;
+            if (title) addHidden(form, 'title', title);
+
+            document.body.appendChild(form);
+            form.submit();
+        };
+
+        reader.readAsDataURL(blob);
+    }
+
+    function addHidden(form, name, value) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
     }
 </script>
 
