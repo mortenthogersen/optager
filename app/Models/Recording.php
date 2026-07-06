@@ -15,6 +15,7 @@ class Recording extends Model
     use HasFactory;
 
     protected $fillable = [
+        'uuid',
         'title',
         'source_type',
         'status',
