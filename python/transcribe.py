@@ -57,13 +57,18 @@ def main():
         audio_duration = len(audio_array) / sample_rate
 
         if audio_duration > 30:
-            text = transcribe_chunked(pipe, audio_array, sample_rate, args.language)
+            output = pipe(
+                {"array": audio_array, "sampling_rate": sample_rate},
+                generate_kwargs={"language": args.language, "task": "transcribe", "num_beams": 1},
+                chunk_length_s=30,
+                stride_length_s=5,
+            )
         else:
             output = pipe(
                 {"array": audio_array, "sampling_rate": sample_rate},
                 generate_kwargs={"language": args.language, "task": "transcribe"},
             )
-            text = output.get("text", "").strip()
+        text = output.get("text", "").strip()
 
         result["status"] = "success"
         result["text"] = text
@@ -83,39 +88,6 @@ def main():
     else:
         print(json.dumps(result, ensure_ascii=False), file=sys.stderr)
         sys.exit(1)
-
-
-def transcribe_chunked(pipe, audio_array, sample_rate, language):
-    """Split audio into 30s chunks, transcribe each, concatenate results."""
-    chunk_duration = 30
-    overlap_duration = 1
-    chunk_samples = chunk_duration * sample_rate
-    overlap_samples = overlap_duration * sample_rate
-    step = chunk_samples - overlap_samples
-
-    texts = []
-    start = 0
-
-    while start < len(audio_array):
-        end = min(start + chunk_samples, len(audio_array))
-        chunk = audio_array[start:end]
-
-        output = pipe(
-            {"array": chunk, "sampling_rate": sample_rate},
-            generate_kwargs={
-                "language": language,
-                "task": "transcribe",
-                "num_beams": 1,
-            },
-        )
-
-        chunk_text = output.get("text", "").strip()
-        if chunk_text:
-            texts.append(chunk_text)
-
-        start += step
-
-    return " ".join(texts)
 
 
 def resolve_device(requested: str | None) -> tuple:
