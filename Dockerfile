@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-dev \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
-        pdo_sqlite \
         mbstring \
         intl \
         bcmath \
