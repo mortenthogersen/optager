@@ -25,16 +25,24 @@
     <!-- Recording state -->
     <div id="recording-ui" class="space-y-6">
         <!-- Record button -->
-        <button
-            id="record-btn"
-            onclick="startRecording()"
-            class="w-full aspect-square max-w-[200px] mx-auto rounded-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all flex items-center justify-center shadow-lg shadow-red-600/30"
-        >
-            <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="6"/>
-            </svg>
-        </button>
-        <p class="text-center text-gray-400 text-xs">Tryk for at optage</p>
+        <div id="record-area">
+            <button
+                id="record-btn"
+                onclick="startRecording()"
+                class="w-full aspect-square max-w-[200px] mx-auto rounded-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all flex items-center justify-center shadow-lg shadow-red-600/30"
+            >
+                <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+            </button>
+            <p class="text-center text-gray-400 text-xs mt-2">Tryk for at optage</p>
+        </div>
+
+        <!-- Mic error -->
+        <div id="mic-error" class="hidden bg-amber-900/30 border border-amber-600 rounded-2xl p-4 text-center">
+            <p class="text-amber-400 font-medium">Mikrofon ikke tilgængelig</p>
+            <p class="text-gray-400 text-sm mt-1">Brug fil-upload nedenfor i stedet</p>
+        </div>
 
         <!-- Recording active state -->
         <div id="recording-active" class="hidden space-y-4">
@@ -128,7 +136,7 @@
             mediaRecorder.start(1000);
 
             // UI
-            document.getElementById('record-btn').parentElement.classList.add('hidden');
+            document.getElementById('record-area').classList.add('hidden');
             document.getElementById('recording-active').classList.remove('hidden');
             document.getElementById('timer').textContent = '00:00';
 
@@ -136,7 +144,8 @@
             timerInterval = setInterval(updateTimer, 200);
 
         } catch (err) {
-            alert('Kunne ikke få adgang til mikrofon: ' + err.message);
+            document.getElementById('record-area').classList.add('hidden');
+            document.getElementById('mic-error').classList.remove('hidden');
         }
     }
 
