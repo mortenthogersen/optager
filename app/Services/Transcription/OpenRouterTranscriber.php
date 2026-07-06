@@ -2,6 +2,7 @@
 
 namespace App\Services\Transcription;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -15,9 +16,20 @@ class OpenRouterTranscriber
 
     public function __construct()
     {
-        $this->apiKey = (string) config('services.openrouter.api_key');
+        $this->apiKey = $this->resolveSetting('openrouter_api_key') ?: (string) config('services.openrouter.api_key');
         $this->baseUrl = 'https://openrouter.ai/api/v1';
-        $this->model = config('services.openrouter.stt_model', 'nvidia/parakeet-tdt-0.6b-v3');
+        $this->model = $this->resolveSetting('openrouter_stt_model') ?: config('services.openrouter.stt_model', 'nvidia/parakeet-tdt-0.6b-v3');
+    }
+
+    private function resolveSetting(string $key): ?string
+    {
+        try {
+            $value = Setting::get($key);
+
+            return $value !== '' && $value !== null ? (string) $value : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function transcribe(string $audioPath, string $language = 'da'): array

@@ -2,6 +2,7 @@
 
 namespace App\Services\Summarization;
 
+use App\Models\Setting;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,9 +17,20 @@ class DeepSeekClient
 
     public function __construct()
     {
-        $this->apiKey = (string) config('services.deepseek.api_key');
-        $this->baseUrl = config('services.deepseek.base_url') ?: 'https://api.deepseek.com';
-        $this->defaultModel = config('services.deepseek.model') ?: 'deepseek-v4-flash';
+        $this->apiKey = $this->resolveSetting('deepseek_api_key') ?: (string) config('services.deepseek.api_key');
+        $this->baseUrl = $this->resolveSetting('deepseek_base_url') ?: config('services.deepseek.base_url') ?: 'https://api.deepseek.com';
+        $this->defaultModel = $this->resolveSetting('deepseek_model') ?: config('services.deepseek.model') ?: 'deepseek-v4-flash';
+    }
+
+    private function resolveSetting(string $key): ?string
+    {
+        try {
+            $value = Setting::get($key);
+
+            return $value !== '' && $value !== null ? (string) $value : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function summarizeMeeting(string $transcript, ?string $model = null): array
