@@ -22,8 +22,10 @@ if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
     sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
 fi
 
-# Ensure SQLite database exists
+# Ensure SQLite database exists and is writable
 touch /var/www/html/database/database.sqlite
+chown -R www-data:www-data /var/www/html/database
+chmod -R 775 /var/www/html/database
 
 # Run migrations
 php artisan migrate --force --no-interaction || true
@@ -37,5 +39,8 @@ fi
 
 # Storage link
 php artisan storage:link --force --no-interaction 2>/dev/null || true
+
+# Fix permissions for web server
+chown -R www-data:www-data /var/www/html/database /var/www/html/storage /var/www/html/bootstrap/cache
 
 exec "$@"
